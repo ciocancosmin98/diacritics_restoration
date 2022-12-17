@@ -1,0 +1,6 @@
+train_inputs datasets/ro/input_train.txt
+train_targets datasets/ro/target_train.txt
+dev_inputs datasets/ro/input_dev.txt
+dev_targets datasets/ro/target_dev.txt
+test_inputs datasets/ro/input_test.txt
+test_targets datasets/ro/target_test.txt
