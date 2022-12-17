@@ -368,11 +368,16 @@ class ParalelSentencesDataset():
 
         assert len(self.train_xdata) == train_samples
 
-    def get_loaders(self, batch_size: int):
-        n_entries = len(self.train_xdata)
+    def load_data(
+        self,
+        batch_size: int,
+        data_x: List[np.ndarray],
+        data_y: List[np.ndarray]
+    ):
+        n_entries = len(data_x)
 
         max_sentence_len = max([
-            len(self.train_xdata[sent_id])
+            len(data_x[sent_id])
                 for sent_id in range(n_entries)
         ])
 
@@ -387,13 +392,13 @@ class ParalelSentencesDataset():
         )
 
         for sid in range(n_entries):
-            input_lens[sid] = len(self.train_xdata[sid])
+            input_lens[sid] = len(data_x[sid])
 
             for cid in range(input_lens[sid]):
-                inputs[sid][cid] = self.train_xdata[sid][cid]
-                targets[sid][cid] = self.train_ydata[sid][cid]
+                inputs[sid][cid] = data_x[sid][cid]
+                targets[sid][cid] = data_y[sid][cid]
 
-        train_dataset = tf.data.Dataset.from_tensor_slices((
+        dataset = tf.data.Dataset.from_tensor_slices((
             {
                 "inputs": inputs,
                 "input_lens": input_lens
@@ -402,8 +407,21 @@ class ParalelSentencesDataset():
                 "labels": targets
             }
         ))
-        train_loader = train_dataset.batch(batch_size=batch_size)
-        return train_loader
+        loader = dataset.batch(batch_size=batch_size)
+        return loader
+
+    def get_loaders(self, batch_size: int):
+        train_loader = self.load_data(
+            batch_size=batch_size,
+            data_x=self.train_xdata,
+            data_y=self.train_ydata
+        )
+        dev_loader = self.load_data(
+            batch_size=batch_size,
+            data_x=self.validation_xdata,
+            data_y=self.validation_ydata
+        )
+        return train_loader, dev_loader
 
     def next_batch(self):
         '''

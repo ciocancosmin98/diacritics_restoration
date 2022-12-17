@@ -70,7 +70,7 @@ def parse_args():
         help="Logdir name."
     )
     parser.add_argument(
-        "--savedir", default="save", type=str,
+        "--savedir", default="../checkpoints", type=str,
         help="Savedir name."
     )
 
@@ -313,17 +313,13 @@ def main(args: argparse.Namespace):
         run_eagerly=args.debug,
     )
 
-    train_loader = dataset.get_loaders(batch_size=args.batch_size)
-
-    tf.debugging.disable_traceback_filtering()
+    train_loader, dev_loader = dataset.get_loaders(batch_size=args.batch_size)
 
     model.fit(
         train_loader,
-        # validation_data=eval_data_loader,
+        validation_data=dev_loader,
         batch_size=args.batch_size,
-        epochs=args.epochs,
-        # steps_per_epoch=train_dataset.total_steps,
-        # validation_steps=eval_dataset.total_steps if eval_data_loader else None,
+        epochs=args.epochs
     )
 
     # if args.restore:
