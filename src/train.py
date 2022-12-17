@@ -322,7 +322,6 @@ def main(args: argparse.Namespace):
         # validation_data=eval_data_loader,
         batch_size=args.batch_size,
         epochs=args.epochs,
-        steps_per_epoch=1000,
         # steps_per_epoch=train_dataset.total_steps,
         # validation_steps=eval_dataset.total_steps if eval_data_loader else None,
     )
