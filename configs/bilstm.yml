@@ -1,0 +1,61 @@
+model_config:
+  name: bilstm
+  char_embedding_dim: 256
+  rnn_cell_dim: 256
+  rnn_n_layers: 1
+  dropout: 0.0
+  use_residual: False
+
+
+learning_config:
+  train_dataset_config:
+    inputs_path: 'datasets/ro/input_train.txt'
+    targets_path: 'datasets/ro/target_train.txt'
+    shuffle: True
+    cache: True
+    buffer_size: 100
+    drop_remainder: True
+    stage: train
+
+  eval_dataset_config:
+    use_tf: True
+    data_paths: 'asdf'
+    tfrecords_dir: null
+    shuffle: False
+    cache: True
+    buffer_size: 100
+    drop_remainder: True
+    stage: eval
+
+  test_dataset_config:
+    use_tf: True
+    data_paths: 'asdf'
+    tfrecords_dir: null
+    shuffle: False
+    cache: True
+    buffer_size: 100
+    drop_remainder: True
+    stage: test
+
+  optimizer_config:
+    learning_rate: 1e-4
+    beta_1: 0.9
+    beta_2: 0.999
+    epsilon: 1e-7
+
+  running_config:
+    batch_size: 128
+    num_epochs: 10
+    checkpoint:
+      filepath: D:/Models/local/conformer/checkpoints/{epoch:02d}.h5
+      save_best_only: False
+      save_weights_only: True
+      save_freq: epoch
+    states_dir: D:/Models/local/conformer/states
+    tensorboard:
+      log_dir: D:/Models/local/conformer/tensorboard
+      histogram_freq: 1
+      write_graph: True
+      write_images: True
+      update_freq: epoch
+      profile_batch: 2

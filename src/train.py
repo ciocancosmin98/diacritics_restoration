@@ -23,6 +23,7 @@ from dataset import (
     read_dataset_files
 )
 from common import utils
+from config import Config, BiLSTMConfig
 from models.bilstm import BiLSTM
 
 
@@ -33,16 +34,12 @@ def parse_args():
         help="Path to dataset configuration file storing files for train, dev and test."
     )
     parser.add_argument(
+        "--config", required=True, type=str,
+        help="Path to configuration file."
+    )
+    parser.add_argument(
         "--exp_name", default='', type=str,
         help="Experiment name."
-    )
-    parser.add_argument(
-        "--batch_size", default=128, type=int,
-        help="Batch size."
-    )
-    parser.add_argument(
-        "--embedding", default=256, type=int,
-        help="Embedding dimension. One hot is used if <1. It is highly recommended that embedding == rnn_cell_dim"
     )
     parser.add_argument(
         "--input_char_vocab", default=None, type=str,
@@ -60,10 +57,6 @@ def parse_args():
     parser.add_argument(
         "--max_chars", default=200, type=int,
         help="Maximum number of characters in a sentence."
-    )
-    parser.add_argument(
-        "--epochs", default=10, type=int,
-        help="Number of epochs."
     )
     parser.add_argument(
         "--logdir", default="logs", type=str,
@@ -90,50 +83,6 @@ def parse_args():
     parser.add_argument(
         "--keep_prob", default=0.8, type=float,
         help="Dropout keep probability used for training."
-    )
-
-    parser.add_argument(
-        "--rnn_cell", default="gru", type=str,
-        help="RNN cell type."
-    )
-    parser.add_argument(
-        "--rnn_cell_dim", default=240, type=int,
-        help="RNN cell dimension."
-    )
-    parser.add_argument(
-        "--num_layers", default=1, type=int,
-        help="Number of layers."
-    )
-    parser.add_argument(
-        "--learning_rate", default=1e-4, type=float,
-        help="Learning rate."
-    )
-    parser.add_argument(
-        "--threads", default=8, type=int,
-        help="Maximum number of threads to use."
-    )
-
-    parser.add_argument(
-        '--use_residual', action='store_true', default=False,
-        help="If set, residual connections will be used in the model."
-    )
-
-    parser.add_argument(
-        "--save_every", default=2000, type=int,
-        help="Interval for saving models."
-    )
-    parser.add_argument(
-        "--log_every", default=1000, type=int,
-        help="Interval for logging models (Tensorboard)."
-    )
-    parser.add_argument(
-        "--num_test", default=1000, type=int,
-        help="Number of samples to test on."
-    )
-
-    parser.add_argument(
-        "--restore", type=str,
-        help="Restore model from this checkpoint and continue training from it. Can be a shell-style wildcard expandable exactly to one directory."
     )
 
     parser.add_argument(
@@ -189,9 +138,14 @@ def setup_session(args: argparse.Namespace):
     # Set random seed
     np.random.seed(42)
 
+    config = Config(args.config, BiLSTMConfig)
+
     experiment_name = args.exp_name
     experiment_name += '_layers{}_dim{}_embedding{}_lr{}'.format(
-        args.num_layers, args.rnn_cell_dim, args.embedding, args.learning_rate
+        config.model_config.rnn_n_layers,
+        config.model_config.rnn_cell_dim,
+        config.model_config.char_embedding_dim,
+        config.learning_config.optimizer_config.learning_rate
     )
 
     # create save directory for current experiment's data (if not exists)
@@ -221,7 +175,7 @@ def setup_session(args: argparse.Namespace):
     # )
     summary_writer = None
 
-    return save_model_dir, summary_writer
+    return save_model_dir, summary_writer, config
 
 
 def add_dev_and_test_sets(
@@ -248,7 +202,7 @@ def add_dev_and_test_sets(
 
 
 def main(args: argparse.Namespace):
-    save_model_dir, summary_writer = setup_session(args)
+    save_model_dir, summary_writer, config = setup_session(args)
 
     ds_fpaths = utils.parse_dataset_file(args.dataset)
     print(ds_fpaths, '\nLoading train data')
@@ -262,11 +216,13 @@ def main(args: argparse.Namespace):
     input_char_vocab, target_char_vocab = load_vocabularies(
         input_vocab_path=args.input_char_vocab,
         target_vocab_path=args.target_char_vocab,
-        checkpoint_path=args.restore
+        checkpoint_path=None
     )
 
+    batch_size = config.learning_config.running_config.batch_size
+
     dataset = ParalelSentencesDataset(
-        batch_size=args.batch_size,
+        batch_size=batch_size,
         max_chars_in_sentence=args.max_chars,
         input_sentences=input_sentences,
         target_sentences=target_sentences,
@@ -294,37 +250,35 @@ def main(args: argparse.Namespace):
         pickle.dump(args, f)
 
     model = BiLSTM(
-        lstm_units=args.rnn_cell_dim,
-        num_rnns=args.num_layers,
+        lstm_units=config.model_config.rnn_cell_dim,
+        num_rnns=config.model_config.rnn_n_layers,
         input_alphabet_size=len(input_char_vocab.keys()),
         target_alphabet_size=len(target_char_vocab.keys()),
-        embedding_dim=args.embedding,
-        use_residual=args.use_residual,
-        dropout=0.0
+        embedding_dim=config.model_config.char_embedding_dim,
+        use_residual=config.model_config.use_residual,
+        dropout=config.model_config.dropout
     )
 
-    model.make(args.batch_size)
+    model.make(batch_size)
     model.summary(line_length=80)
 
-    optimizer = tf.keras.optimizers.Adam(args.learning_rate)
+    optimizer = tf.keras.optimizers.Adam(
+        **config.learning_config.optimizer_config.__dict__
+    )
 
     model.compile(
         optimizer=optimizer,
         run_eagerly=args.debug,
     )
 
-    train_loader, dev_loader = dataset.get_loaders(batch_size=args.batch_size)
+    train_loader, dev_loader = dataset.get_loaders(batch_size=batch_size)
 
     model.fit(
         train_loader,
         validation_data=dev_loader,
-        batch_size=args.batch_size,
-        epochs=args.epochs
+        batch_size=batch_size,
+        epochs=config.learning_config.running_config.num_epochs
     )
-
-    # if args.restore:
-    #     logging.info('Restoring model from: {}'.format(checkpoint_path))
-    #     network.restore(checkpoint_path)
 
 
 if __name__ == "__main__":
