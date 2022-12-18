@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Union, Any, TypeVar, Type, Generic
+from typing import Dict, List, Optional, Union, Any, TypeVar, Type, Generic
 import yaml
 import re
 import tensorflow as tf
@@ -32,8 +32,9 @@ def load_yaml(
 
 
 def get_from_config(config: Dict[str, Any], key: str, dtype: Type[T]):
-    value = config.get(key, None)
-    if value is None:
+    try:
+        value = config[key]
+    except:
         raise Exception(f'Key "{key}" does not exist in config {config}.')
     if not isinstance(value, dtype):
         raise Exception(
@@ -74,34 +75,16 @@ def preprocess_paths(
 
 class DatasetConfig:
     def __init__(self, config: dict):
-        self.stage = config.pop("stage", None)
-        self.data_paths = preprocess_paths(config.pop("data_paths", None))
-        self.tfrecords_dir = preprocess_paths(config.pop("tfrecords_dir", None), isdir=True)
-        self.tfrecords_shards = config.pop("tfrecords_shards", 16)
-        self.shuffle = config.pop("shuffle", False)
-        self.cache = config.pop("cache", False)
-        self.drop_remainder = config.pop("drop_remainder", True)
-        self.buffer_size = config.pop("buffer_size", 100)
-        self.use_tf = config.pop("use_tf", False)
-        # self.augmentations = Augmentation(config.pop("augmentation_config", {}))
-        for k, v in config.items():
-            setattr(self, k, v)
+        self.max_chars_in_sentence = \
+            get_from_config(config, "max_chars_in_sentence", int)
+        self.take_num_top_chars = \
+            get_from_config(config, "take_num_top_chars", Optional[int])
 
 
 class RunningConfig:
     def __init__(self, config: dict):
         self.batch_size = get_from_config(config, "batch_size", int)
         self.num_epochs = get_from_config(config, "num_epochs", int)
-        # for k, v in config.items():
-        #     setattr(self, k, v)
-        #     if k == "checkpoint":
-        #         if v and v.get("filepath"):
-        #             preprocess_paths(v.get("filepath"))
-        #     elif k == "states_dir" and v:
-        #         preprocess_paths(v)
-        #     elif k == "tensorboard":
-        #         if v and v.get("log_dir"):
-        #             preprocess_paths(v.get("log_dir"))
 
 
 class OptimizerConfig:
@@ -111,12 +94,13 @@ class OptimizerConfig:
         self.beta_2 = get_from_config(config, "beta_2", float)
         self.epsilon = get_from_config(config, "epsilon", float)
 
+
 class LearningConfig:
     def __init__(self, config: dict):
+        self.dataset_config = DatasetConfig(config.pop("dataset_config", {}))
         self.running_config = RunningConfig(config.pop("running_config", {}))
         self.optimizer_config = OptimizerConfig(config.pop("optimizer_config", {}))
-        # for k, v in config.items():
-        #     setattr(self, k, v)
+
 
 class BiLSTMConfig:
     def __init__(self, config: dict):
@@ -133,10 +117,5 @@ class Config(Generic[T]):
 
     def __init__(self, data: Union[str, dict], model_type: Type[T]):
         config = data if isinstance(data, dict) else load_yaml(preprocess_paths(data))
-        # self.speech_config = config.pop("speech_config", {})
-        # self.decoder_config = config.pop("decoder_config", {})
-        # self.model_config = config.pop("model_config", {})
         self.model_config: T = model_type(config.pop("model_config", {}))
         self.learning_config = LearningConfig(config.pop("learning_config", {}))
-        for k, v in config.items():
-            setattr(self, k, v)

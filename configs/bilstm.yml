@@ -8,34 +8,9 @@ model_config:
 
 
 learning_config:
-  train_dataset_config:
-    inputs_path: 'datasets/ro/input_train.txt'
-    targets_path: 'datasets/ro/target_train.txt'
-    shuffle: True
-    cache: True
-    buffer_size: 100
-    drop_remainder: True
-    stage: train
-
-  eval_dataset_config:
-    use_tf: True
-    data_paths: 'asdf'
-    tfrecords_dir: null
-    shuffle: False
-    cache: True
-    buffer_size: 100
-    drop_remainder: True
-    stage: eval
-
-  test_dataset_config:
-    use_tf: True
-    data_paths: 'asdf'
-    tfrecords_dir: null
-    shuffle: False
-    cache: True
-    buffer_size: 100
-    drop_remainder: True
-    stage: test
+  dataset_config:
+    max_chars_in_sentence: 200
+    take_num_top_chars: 50
 
   optimizer_config:
     learning_rate: 1e-4
@@ -46,16 +21,3 @@ learning_config:
   running_config:
     batch_size: 128
     num_epochs: 10
-    checkpoint:
-      filepath: D:/Models/local/conformer/checkpoints/{epoch:02d}.h5
-      save_best_only: False
-      save_weights_only: True
-      save_freq: epoch
-    states_dir: D:/Models/local/conformer/states
-    tensorboard:
-      log_dir: D:/Models/local/conformer/tensorboard
-      histogram_freq: 1
-      write_graph: True
-      write_images: True
-      update_freq: epoch
-      profile_batch: 2

@@ -169,13 +169,7 @@ def setup_session(args: argparse.Namespace):
     ))
     logging.info('Experiment arguments: {}'.format(str(args)))
 
-    # summary_writer = tf.compat.v1.summary.FileWriter(
-    #     f"{args.logdir}/{timestamp}-{experiment_name}",
-    #     flush_secs=10
-    # )
-    summary_writer = None
-
-    return save_model_dir, summary_writer, config
+    return save_model_dir, config
 
 
 def add_dev_and_test_sets(
@@ -202,7 +196,7 @@ def add_dev_and_test_sets(
 
 
 def main(args: argparse.Namespace):
-    save_model_dir, summary_writer, config = setup_session(args)
+    save_model_dir, config = setup_session(args)
 
     ds_fpaths = utils.parse_dataset_file(args.dataset)
     print(ds_fpaths, '\nLoading train data')
@@ -223,12 +217,12 @@ def main(args: argparse.Namespace):
 
     dataset = ParalelSentencesDataset(
         batch_size=batch_size,
-        max_chars_in_sentence=args.max_chars,
+        max_chars_in_sentence=config.learning_config.dataset_config.max_chars_in_sentence,
         input_sentences=input_sentences,
         target_sentences=target_sentences,
         input_char_vocabulary=input_char_vocab,
         target_char_vocabulary=target_char_vocab,
-        take_num_top_chars=args.num_top_chars
+        take_num_top_chars=config.learning_config.dataset_config.take_num_top_chars
     )
     add_dev_and_test_sets(dataset, ds_fpaths)
 
