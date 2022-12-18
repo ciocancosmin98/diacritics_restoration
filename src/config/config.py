@@ -79,6 +79,8 @@ class DatasetConfig:
             get_from_config(config, "max_chars_in_sentence", int)
         self.take_num_top_chars = \
             get_from_config(config, "take_num_top_chars", Optional[int])
+        self.sentence_limit = \
+            get_from_config(config, "sentence_limit", Optional[int])
 
 
 class RunningConfig:

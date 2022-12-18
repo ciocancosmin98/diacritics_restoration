@@ -11,6 +11,7 @@ learning_config:
   dataset_config:
     max_chars_in_sentence: 200
     take_num_top_chars: 50
+    sentence_limit: null
 
   optimizer_config:
     learning_rate: 1e-4

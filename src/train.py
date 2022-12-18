@@ -50,46 +50,9 @@ def parse_args():
         help="Path to file storing target char vocabulary. If no provided, is automatically computed from data."
     )
     parser.add_argument(
-        "--num_top_chars", default=None, type=int,
-        help="Take only num_top_chars most occuring characters. All other will be considered UNK"
-    )
-
-    parser.add_argument(
-        "--max_chars", default=200, type=int,
-        help="Maximum number of characters in a sentence."
-    )
-    parser.add_argument(
-        "--logdir", default="logs", type=str,
-        help="Logdir name."
-    )
-    parser.add_argument(
         "--savedir", default="../checkpoints", type=str,
         help="Savedir name."
     )
-
-    parser.add_argument(
-        "--train_perc", default=1.0, type=float,
-        help="Percentage of total samples used for training."
-    )
-    parser.add_argument(
-        "--validation_perc", default=0.0, type=float,
-        help="Percentage of total samples used for validation set."
-    )
-    parser.add_argument(
-        "--test_perc", default=0.0, type=float,
-        help="Percentage of total samples used for testing."
-    )
-
-    parser.add_argument(
-        "--keep_prob", default=0.8, type=float,
-        help="Dropout keep probability used for training."
-    )
-
-    parser.add_argument(
-        "--num_sentences", default=None, type=int,
-        help="Number of sentences to read from train file (-1 == read all sentences)."
-    )
-
     parser.add_argument(
         "--debug", action="store_true",
         help="Runs the training steps eagerly, allowing for easier debugging."
@@ -204,7 +167,7 @@ def main(args: argparse.Namespace):
     input_sentences, target_sentences = read_dataset_files(
         inputs_filepath=ds_fpaths['train_inputs'],
         targets_filepath=ds_fpaths['train_targets'],
-        sentence_limit=args.num_sentences
+        sentence_limit=config.learning_config.dataset_config.sentence_limit
     )
 
     input_char_vocab, target_char_vocab = load_vocabularies(
