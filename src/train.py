@@ -226,9 +226,6 @@ def main(args: argparse.Namespace):
         max_chars_in_sentence=args.max_chars,
         input_sentences=input_sentences,
         target_sentences=target_sentences,
-        train_perc=args.train_perc,
-        validation_perc=args.validation_perc,
-        test_perc=args.test_perc,
         input_char_vocabulary=input_char_vocab,
         target_char_vocabulary=target_char_vocab,
         take_num_top_chars=args.num_top_chars
