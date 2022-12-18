@@ -11,6 +11,7 @@ from common import constants
 
 
 CharToIndexType = Dict[str, int]
+IndexToCharType = Dict[int, str]
 
 
 class VocabularyType(Enum):
@@ -30,6 +31,11 @@ class BatchedSamples:
     inputs: List[np.ndarray]
     input_lens: List[np.ndarray]
     targets: List[np.ndarray]
+
+
+def reverse_charmap(charmap: CharToIndexType) -> IndexToCharType:
+    reverse: IndexToCharType = {v: k for k, v in charmap.items()}
+    return reverse
 
 
 def read_dataset_files(

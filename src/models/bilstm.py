@@ -58,8 +58,9 @@ class BiLSTM(tf.keras.Model):
 
     def compute_metrics(self, x, y, y_pred, sample_weight):
         labels_masked = tf.boolean_mask(y['labels'], y_pred['mask'])
+        outputs_masked = tf.boolean_mask(y_pred['logits'], y_pred['mask'])
 
-        predicted_labels = tf.argmax(y_pred['logits'], axis=1)
+        predicted_labels = tf.argmax(outputs_masked, axis=1)
         self.acc_tracker.update_state(labels_masked, predicted_labels)
 
         return {
@@ -69,10 +70,11 @@ class BiLSTM(tf.keras.Model):
 
     def compute_loss(self, x, y, y_pred, sample_weight):
         labels_masked = tf.boolean_mask(y['labels'], y_pred['mask'])
+        outputs_masked = tf.boolean_mask(y_pred['logits'], y_pred['mask'])
         loss = tf.reduce_mean(
             tf.nn.sparse_softmax_cross_entropy_with_logits(
                 labels=labels_masked,
-                logits=y_pred['logits']
+                logits=outputs_masked
             )
         )
 
@@ -104,6 +106,8 @@ class BiLSTM(tf.keras.Model):
                 outputs += rnn_inputs
             outputs = self.dropout(outputs)
 
+        outputs = self.hidden_to_target(outputs)
+
         max_sentence_len_in_batch = tf.shape(sentences)[1]
 
         # the masked outputs will combine the batch dimension and the sequence
@@ -117,14 +121,11 @@ class BiLSTM(tf.keras.Model):
         # the mask and the result is of size [2+3, 7] where the 2 and 3 from the
         # sum are the sequence lengths from the batch;
         mask = tf.sequence_mask(sentence_length, maxlen=max_sentence_len_in_batch)
-        masked_outputs = tf.boolean_mask(outputs, mask)
 
-        output_layer = self.hidden_to_target(masked_outputs)
-        outputs_softmax = tf.nn.softmax(output_layer)
-
-        predictions = tf.cast(tf.argmax(output_layer, 1), tf.int32)
+        predictions = tf.cast(tf.argmax(outputs, 2), tf.int32)
 
         return {
-            'logits': output_layer,
+            'predictions': predictions,
+            'logits': outputs,
             'mask': mask
         }
