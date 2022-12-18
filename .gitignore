@@ -141,4 +141,4 @@ cython_debug/
 .vscode
 
 # Default tmp directories
-checkpoints
+experiments

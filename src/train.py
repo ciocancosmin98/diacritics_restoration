@@ -50,7 +50,7 @@ def parse_args():
         help="Path to file storing target char vocabulary. If no provided, is automatically computed from data."
     )
     parser.add_argument(
-        "--savedir", default="../checkpoints", type=str,
+        "--savedir", default="../experiments", type=str,
         help="Savedir name."
     )
     parser.add_argument(
@@ -120,6 +120,22 @@ def setup_session(args: argparse.Namespace):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
     save_model_dir = os.path.join(save_data_dir, timestamp)
     os.makedirs(save_model_dir)
+
+    # update paths from running config
+    chk_path = config.learning_config.running_config.checkpoint['filepath']
+    chk_path = os.path.join(save_model_dir, chk_path)
+    os.makedirs(os.path.dirname(chk_path))
+    config.learning_config.running_config.checkpoint['filepath'] = chk_path
+
+    sts_path = config.learning_config.running_config.states_dir
+    sts_path = os.path.join(save_model_dir, sts_path)
+    os.makedirs(sts_path)
+    config.learning_config.running_config.states_dir = sts_path
+
+    tns_path = config.learning_config.running_config.tensorboard['log_dir']
+    tns_path = os.path.join(save_model_dir, tns_path)
+    os.makedirs(tns_path)
+    config.learning_config.running_config.tensorboard['log_dir'] = tns_path
 
     # configure logger
     logging.basicConfig(
@@ -227,11 +243,24 @@ def main(args: argparse.Namespace):
 
     train_loader, dev_loader = dataset.get_loaders(batch_size=batch_size)
 
+    callbacks = [
+        tf.keras.callbacks.ModelCheckpoint(
+            **config.learning_config.running_config.checkpoint
+        ),
+        tf.keras.callbacks.experimental.BackupAndRestore(
+            config.learning_config.running_config.states_dir
+        ),
+        tf.keras.callbacks.TensorBoard(
+            **config.learning_config.running_config.tensorboard
+        ),
+    ]
+
     model.fit(
         train_loader,
         validation_data=dev_loader,
         batch_size=batch_size,
-        epochs=config.learning_config.running_config.num_epochs
+        epochs=config.learning_config.running_config.num_epochs,
+        callbacks=callbacks
     )
 
 

@@ -87,6 +87,9 @@ class RunningConfig:
     def __init__(self, config: dict):
         self.batch_size = get_from_config(config, "batch_size", int)
         self.num_epochs = get_from_config(config, "num_epochs", int)
+        self.states_dir = get_from_config(config, "states_dir", str)
+        self.tensorboard: Dict = get_from_config(config, "tensorboard", Dict)
+        self.checkpoint: Dict = get_from_config(config, "checkpoint", Dict)
 
 
 class OptimizerConfig:

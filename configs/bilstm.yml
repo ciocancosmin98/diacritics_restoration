@@ -22,3 +22,15 @@ learning_config:
   running_config:
     batch_size: 128
     num_epochs: 10
+    checkpoint:
+      filepath: checkpoints/{epoch:02d}.h5
+      save_best_only: False
+      save_weights_only: True
+      save_freq: epoch
+    states_dir: states
+    tensorboard:
+      log_dir: tensorboard
+      histogram_freq: 1
+      write_graph: True
+      write_images: True
+      update_freq: epoch
