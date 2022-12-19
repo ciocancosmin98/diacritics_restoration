@@ -48,11 +48,19 @@ def parse_args():
         help="Path to .h5 saved model file."
     )
     parser.add_argument(
+        "--max_entries", default=1000, type=int,
+        help="Maximum number of entries to predict on. Set negative or zero to ignore."
+    )
+    parser.add_argument(
         "--debug", action="store_true",
         help="Runs the training steps eagerly, allowing for easier debugging."
     )
 
     args = parser.parse_args()
+
+    if args.max_entries <= 0:
+        args.max_entries = None
+
     return args
 
 
@@ -87,6 +95,7 @@ def main(args: argparse.Namespace):
     assert target_char_vocab is not None
 
     batch_size = config.learning_config.running_config.batch_size
+    batch_size = 64
 
     dataset = ParalelSentencesDataset(
         batch_size=batch_size,
@@ -116,7 +125,10 @@ def main(args: argparse.Namespace):
     model.summary(line_length=80)
     model.load_weights(args.model_path)
 
-    train_loader, dev_loader = dataset.get_loaders(batch_size=batch_size)
+    train_loader, dev_loader = dataset.get_loaders(
+        batch_size=batch_size,
+        max_entries=args.max_entries
+    )
 
     results = model.predict(
         dev_loader,

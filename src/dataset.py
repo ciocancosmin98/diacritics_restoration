@@ -323,9 +323,12 @@ class ParalelSentencesDataset():
         self,
         batch_size: int,
         data_x: List[np.ndarray],
-        data_y: List[np.ndarray]
+        data_y: List[np.ndarray],
+        max_entries: Optional[int] = None
     ):
         n_entries = len(data_x)
+        if max_entries is not None:
+            n_entries = min(n_entries, max_entries)
 
         max_sentence_len = max([
             len(data_x[sent_id])
@@ -361,15 +364,17 @@ class ParalelSentencesDataset():
         loader = dataset.batch(batch_size=batch_size)
         return loader
 
-    def get_loaders(self, batch_size: int):
+    def get_loaders(self, batch_size: int, max_entries: Optional[int] = None):
         train_loader = self.load_data(
             batch_size=batch_size,
             data_x=self.train_xdata,
-            data_y=self.train_ydata
+            data_y=self.train_ydata,
+            max_entries=max_entries
         )
         dev_loader = self.load_data(
             batch_size=batch_size,
             data_x=self.validation_xdata,
-            data_y=self.validation_ydata
+            data_y=self.validation_ydata,
+            max_entries=max_entries
         )
         return train_loader, dev_loader
