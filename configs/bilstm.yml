@@ -10,7 +10,7 @@ model_config:
 learning_config:
   dataset_config:
     max_chars_in_sentence: 200
-    take_num_top_chars: 50
+    take_num_top_chars: 100
     sentence_limit: null
 
   optimizer_config:
