@@ -8,7 +8,7 @@ import math
 import os
 import sys
 import time
-from typing import Dict, Union
+from typing import Dict, Optional, Sequence, Union
 import tensorflow as tf
 from glob import glob
 import argparse
@@ -25,9 +25,10 @@ from dataset import (
 from common import utils
 from config import Config, BiLSTMConfig
 from models.bilstm import BiLSTM
+from models.attention_model import AttentionModel
 
 
-def parse_args():
+def parse_args(args: Optional[Sequence[str]] = None):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         "dataset", default='', type=str,
@@ -58,7 +59,7 @@ def parse_args():
         help="Runs the training steps eagerly, allowing for easier debugging."
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     return args
 
 
@@ -97,11 +98,12 @@ def load_vocabularies(
     return input_char_vocab, target_char_vocab
 
 
-def setup_session(args: argparse.Namespace):
+def setup_session(args: argparse.Namespace, config: Optional[Config[BiLSTMConfig]] = None):
     # Set random seed
     np.random.seed(42)
 
-    config = Config(args.config, BiLSTMConfig)
+    if config is None:
+        config = Config(args.config, BiLSTMConfig)
 
     experiment_name = args.exp_name
     experiment_name += '_layers{}_dim{}_embedding{}_lr{}'.format(
@@ -174,8 +176,8 @@ def add_dev_and_test_sets(
         dataset.add_test_set(test_input_sentences, test_target_sentences)
 
 
-def main(args: argparse.Namespace):
-    save_model_dir, config = setup_session(args)
+def main(args: argparse.Namespace, config: Optional[Config[BiLSTMConfig]] = None):
+    save_model_dir, config = setup_session(args, config)
 
     ds_fpaths = utils.parse_dataset_file(args.dataset)
     print(ds_fpaths, '\nLoading train data')
@@ -255,13 +257,16 @@ def main(args: argparse.Namespace):
         ),
     ]
 
-    model.fit(
+    history = model.fit(
         train_loader,
         validation_data=dev_loader,
         batch_size=batch_size,
         epochs=config.learning_config.running_config.num_epochs,
         callbacks=callbacks
     )
+
+    best_val_accuracy: float = np.max(history.history['val_accuracy'])
+    return best_val_accuracy
 
 
 if __name__ == "__main__":
