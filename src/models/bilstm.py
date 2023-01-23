@@ -15,7 +15,10 @@ class BiLSTM(tf.keras.Model):
         dropout: float
     ):
         super(BiLSTM, self).__init__()
-        self.use_residual = use_residual
+        if embedding_dim == lstm_units:
+            self.use_residual = use_residual
+        else:
+            self.use_residual = False
 
         # add metric trackers
         self.acc_tracker = tf.keras.metrics.Accuracy()
